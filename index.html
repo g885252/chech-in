@@ -405,7 +405,7 @@
         </span>
         <div>
           <h1 class="font-display font-extrabold text-xl sm:text-2xl text-[#1e3a4c] leading-tight">
-            教師專屬・情緒氣象統計後台
+            📊 老師專屬：班級情緒氣象統計後台
           </h1>
           <p class="text-xs sm:text-sm font-semibold text-[#5a7384]">
             Today's Mood Weather — 班級每日 SEL 打卡即時統計
@@ -413,14 +413,10 @@
         </div>
       </div>
 
-      <!-- Real-Time Sync Badge + Preview Student Page Button -->
+      <!-- Real-Time Sync Badge + Back to Student Page Button -->
       <div class="flex items-center gap-2.5 flex-wrap">
         <div id="live-sync-badge" class="inline-flex items-center gap-2 bg-[#eaf4e2] border border-[#a6cc8b] text-[#2b5932] text-xs sm:text-sm font-bold px-3.5 py-2 rounded-full shadow-sm">
-          <span class="relative flex h-2.5 w-2.5">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4ca859] opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#3c9149]"></span>
-          </span>
-          <span id="live-sync-text">即時同步中 (Live)</span>
+          <span id="live-sync-text">🟢 已連線 Firebase 即時同步</span>
         </div>
 
         <button
@@ -428,13 +424,34 @@
           type="button"
           class="btn-mini text-xs sm:text-sm font-bold px-4 py-2 rounded-full cursor-pointer"
         >
-          預覽學生端頁面
+          返回學生頁面
         </button>
       </div>
     </header>
 
     <!-- Main Teacher Dashboard Content -->
     <main class="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 pt-3 pb-12 space-y-6">
+
+      <!-- Diagnostic Banner (Hidden unless Firestore isn't enabled or permission denied) -->
+      <section id="firestore-error-banner" class="hidden bg-[#fff1f3] border-2 border-[#f2a8b8] rounded-2xl p-5 shadow-sm">
+        <div class="flex items-start gap-3">
+          <span class="text-2xl leading-none shrink-0">⚠️</span>
+          <div class="space-y-1.5 text-sm text-[#7a2338]">
+            <h2 class="font-display font-extrabold text-base text-[#8f1d38]">
+              尚未完成 Cloud Firestore 資料庫啟用或權限設定
+            </h2>
+            <p id="firestore-error-detail" class="font-semibold">
+              目前無法讀取雲端打卡紀錄。請確認您已在 Firebase 控制台啟用 Cloud Firestore。
+            </p>
+            <ol class="list-decimal list-inside space-y-1 text-xs sm:text-sm font-semibold text-[#6e2a3b] pt-1">
+              <li>前往 Firebase 控制台（專案：<code>checkin-today-s-mood-weather</code>）。</li>
+              <li>左側選單點選「建構」→「<strong>Firestore Database</strong>」→ 點擊「<strong>建立資料庫</strong>」。</li>
+              <li>安全性規則選擇「<strong>以測試模式啟動 (Start in test mode)</strong>」並完成建立。</li>
+              <li>建立完成後重新整理此頁面，即可開始即時同步全班打卡資料。</li>
+            </ol>
+          </div>
+        </div>
+      </section>
 
       <!-- 1. Link Sharing Bar (Top Card) -->
       <section class="dashboard-card p-5 sm:p-6">
@@ -530,7 +547,7 @@
             class="btn-mini px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold cursor-pointer inline-flex items-center gap-1.5"
           >
             <span>📥</span>
-            <span>匯出 CSV</span>
+            <span>匯出 CSV 報表</span>
           </button>
           <button
             id="open-reset-modal-btn"
@@ -538,7 +555,7 @@
             class="bg-[#fff2f4] hover:bg-[#ffe4e8] border-2 border-[#f0b4c0] border-b-[3px] text-[#9e334a] px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold cursor-pointer transition inline-flex items-center gap-1.5"
           >
             <span>🗑️</span>
-            <span>重設統計資料</span>
+            <span>重設所有統計資料</span>
           </button>
         </div>
       </section>
@@ -547,7 +564,7 @@
       <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Total Check-ins -->
         <div class="dashboard-card p-5 flex flex-col justify-between">
-          <span class="text-xs font-extrabold text-[#5d7787] mb-2">總打卡次數（所選區間）</span>
+          <span class="text-xs font-extrabold text-[#5d7787] mb-2">區間總打卡次數</span>
           <div class="flex items-baseline gap-2">
             <span id="kpi-total" class="font-display font-extrabold text-3xl sm:text-4xl text-[#1e3a4c]">0</span>
             <span class="text-sm font-bold text-[#6c8291]">次</span>
@@ -704,8 +721,7 @@
   <!-- APPLICATION SCRIPT (FIREBASE FIRESTORE + STUDENT + TEACHER DASHBOARD)     -->
   <!-- ========================================================================= -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
     import {
       getFirestore,
       collection,
@@ -715,7 +731,7 @@
       deleteDoc,
       doc,
       serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
     /**
      * ============================================================================
@@ -746,7 +762,7 @@
           <ellipse cx="26.5" cy="25" rx="5.5" ry="3.2" transform="rotate(-25 26.5 25)" fill="#FFF4B8" opacity="0.7"/>
         </svg>
       `,
-      partlyCloudy: `
+      partly_cloudy: `
         <svg class="w-11 h-11" viewBox="0 0 64 64" fill="none" aria-hidden="true">
           <defs>
             <radialGradient id="pcSun" cx="35%" cy="35%" r="65%">
@@ -768,7 +784,7 @@
           <path d="M25 49h24.5c5.2 0 9.5-4.1 9.5-9.2 0-4.7-3.6-8.6-8.3-9.1-1.4-5.4-6.4-9.2-12.2-9.2-6.1 0-11.2 4.4-12.2 10.2-.5-.1-.9-.1-1.3-.1-4.8 0-8.7 3.8-8.7 8.6 0 4.9 3.9 8.8 8.7 8.8z" fill="url(#pcCloud)" stroke="#C6D5E3" stroke-width="1.4"/>
         </svg>
       `,
-      overcast: `
+      heavy_rain: `
         <svg class="w-11 h-11" viewBox="0 0 64 64" fill="none" aria-hidden="true">
           <defs>
             <linearGradient id="ovCloud" x1="0" y1="0" x2="0" y2="1">
@@ -829,8 +845,8 @@
         name: 'Sunny Skies',
         zhHint: '開心、充滿活力',
         subtitle: 'Happy and full of energy',
-        cardBg: '#fff4d2',
-        cardBorder: '#f0c45a',
+        cardBg: '#fff4d6',
+        cardBorder: '#f4c869',
         barColor: '#f5be41',
         badgeBg: '#fff8e3',
         badgeBorder: '#e5b84b',
@@ -843,24 +859,24 @@
           'So glad today feels light! Savor every bright little moment.'
         ],
         missions: [
-          'Flash a genuine smile or say something kind to a classmate nearby.',
+          'Smile at one classmate today or say something kind to someone nearby.',
           'Send a quick encouraging message to a friend or family member.',
           'Write down or mentally bookmark one thing that made you feel energized today.'
         ]
       },
       {
-        id: 'partlyCloudy',
+        id: 'partly_cloudy',
         name: 'Partly Cloudy',
         zhHint: '平靜、還不錯',
         subtitle: 'Calm, doing okay',
-        cardBg: '#eaf4e2',
-        cardBorder: '#a6cc8b',
+        cardBg: '#eaf5e3',
+        cardBorder: '#a9cf95',
         barColor: '#7eb865',
         badgeBg: '#edf6e6',
         badgeBorder: '#97be7c',
         activityBg: '#ecf5e5',
         activityType: 'sunshine',
-        svg: WEATHER_SVGS.partlyCloudy,
+        svg: WEATHER_SVGS.partly_cloudy,
         quotes: [
           'Quiet feelings count, too. You can just be here.',
           "You don't have to be at 100% to have a good day. Steady is wonderful.",
@@ -877,8 +893,8 @@
         name: 'Cool Overcast',
         zhHint: '有點累、無聊或發呆',
         subtitle: 'A little tired, bored, or spaced out',
-        cardBg: '#e6f2f9',
-        cardBorder: '#8cb9d6',
+        cardBg: '#e6f2fa',
+        cardBorder: '#7da9c7',
         barColor: '#67a6ce',
         badgeBg: '#ebf5fb',
         badgeBorder: '#85b2cf',
@@ -893,19 +909,19 @@
         ]
       },
       {
-        id: 'heavyRain',
+        id: 'heavy_rain',
         name: 'Heavy Rain',
         zhHint: '難過、委屈、想哭',
         subtitle: 'Sad, hurt, or close to tears',
-        cardBg: '#eaecfa',
-        cardBorder: '#a7b1e3',
+        cardBg: '#ebeffc',
+        cardBorder: '#a2b1e0',
         barColor: '#7f8cd6',
         badgeBg: '#eff1fc',
         badgeBorder: '#9aa5db',
         activityBg: '#eceefa',
         activityType: 'breathing',
         orbColor: '#d5daf7',
-        svg: WEATHER_SVGS.heavyRain,
+        svg: WEATHER_SVGS.heavy_rain,
         quotes: [
           "Rainy days are tough, and it's okay to let the feelings out.",
           "You don't have to carry a heavy cloud all alone. Be kind to your heart today.",
@@ -917,8 +933,8 @@
         name: 'Thunderstorm',
         zhHint: '生氣、焦慮、很煩躁',
         subtitle: 'Angry, anxious, or really frustrated',
-        cardBg: '#f2e9fb',
-        cardBorder: '#c5a3e6',
+        cardBg: '#f1e8fb',
+        cardBorder: '#c5a2e3',
         barColor: '#a87bd6',
         badgeBg: '#f5eefc',
         badgeBorder: '#bc99df',
@@ -937,8 +953,8 @@
         name: 'Rainbow After Rain',
         zhHint: '充滿希望、鬆一口氣',
         subtitle: 'Hopeful, relieved, or ready for a fresh start',
-        cardBg: '#fce9ee',
-        cardBorder: '#eba3b6',
+        cardBg: '#fdebf0',
+        cardBorder: '#f2a8bc',
         barColor: '#e57c9b',
         badgeBg: '#fdf0f3',
         badgeBorder: '#e598ad',
@@ -960,70 +976,65 @@
 
     /**
      * ============================================================================
-     * 3. FIREBASE FIRESTORE SETUP (SILENT ANONYMOUS AUTH — NO LOGIN UI)
-     * Strict Path Rule: /artifacts/{appId}/public/data/mood_checkins
+     * 3. FIREBASE CLOUD FIRESTORE SETUP (DIRECT GITHUB PAGES DEPLOYMENT)
      * ============================================================================
      */
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = {
+      apiKey: "AIzaSyDSysHpJrEvmZMZ8mFZ58c4QdyLXWq4O8c",
+      authDomain: "checkin-today-s-mood-weather.firebaseapp.com",
+      projectId: "checkin-today-s-mood-weather",
+      storageBucket: "checkin-today-s-mood-weather.firebasestorage.app",
+      messagingSenderId: "926706801583",
+      appId: "1:926706801583:web:31881b48e9bc3b1fe3ed5a",
+      measurementId: "G-YCVED6G7RT"
+    };
+
+    const COLLECTION_NAME = 'mood_checkins';
     let db = null;
-    let auth = null;
-    let currentUser = null;
     let unsubscribeStats = null;
 
-    async function initFirebaseBackend() {
+    function initFirebaseBackend() {
       try {
-        if (typeof __firebase_config === 'undefined' || !__firebase_config) {
-          updateSyncBadge(false, '本機展示模式');
-          return;
-        }
-        const firebaseConfig = typeof __firebase_config === 'string'
-          ? JSON.parse(__firebase_config)
-          : __firebase_config;
-
         const fbApp = initializeApp(firebaseConfig);
-        auth = getAuth(fbApp);
         db = getFirestore(fbApp);
 
-        // RULE 3: Authenticate FIRST before any Firestore operation
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          const cred = await signInWithCustomToken(auth, __initial_auth_token);
-          currentUser = cred.user;
-        } else {
-          const cred = await signInAnonymously(auth);
-          currentUser = cred.user;
-        }
-
-        // Start real-time listener if teacher view is active
         if (isTeacherRoute()) {
           subscribeToTeacherStats();
         }
       } catch (err) {
         console.error('Firebase initialization error:', err);
-        updateSyncBadge(false, '連線異常，請重新整理');
+        showFirestoreError('Firebase 初始化失敗：' + (err?.message || '請檢查網路連線'));
       }
     }
 
     function getCheckinsCollectionRef() {
-      return collection(db, 'artifacts', appId, 'public', 'data', 'mood_checkins');
+      return collection(db, COLLECTION_NAME);
     }
 
     async function recordCheckinToFirestore(weather, dateStr) {
-      if (!db || !currentUser) return;
+      if (!db) return;
       try {
         await addDoc(getCheckinsCollectionRef(), {
-          moodId: weather.id,
-          moodName: weather.name,
+          mood: weather.id,
           date: dateStr,
-          timestamp: serverTimestamp()
+          createdAt: serverTimestamp(),
+          clientTs: Date.now()
         });
       } catch (err) {
-        console.error('Failed to write check-in to Firestore:', err);
+        // Gracefully swallow student-side errors so confetti & local heart still work smoothly
+        console.warn('Firestore write skipped or denied:', err?.code || err?.message);
       }
     }
 
+    function normalizeMoodId(rawMood) {
+      if (rawMood === 'partlyCloudy') return 'partly_cloudy';
+      if (rawMood === 'heavyRain') return 'heavy_rain';
+      return rawMood || '';
+    }
+
     function subscribeToTeacherStats() {
-      if (!db || !currentUser) return;
-      if (unsubscribeStats) return; // Already listening
+      if (!db) return;
+      if (unsubscribeStats) return;
 
       const colRef = getCheckinsCollectionRef();
       unsubscribeStats = onSnapshot(
@@ -1032,23 +1043,31 @@
           const records = [];
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
+            const normalizedMood = normalizeMoodId(data.mood || data.moodId);
+            const tsMs = data.createdAt && typeof data.createdAt.toMillis === 'function'
+              ? data.createdAt.toMillis()
+              : (typeof data.clientTs === 'number' ? data.clientTs : 0);
+
             records.push({
               id: docSnap.id,
-              moodId: data.moodId || '',
-              moodName: data.moodName || '',
+              moodId: normalizedMood,
               date: data.date || '',
-              timestampMs: data.timestamp && typeof data.timestamp.toMillis === 'function'
-                ? data.timestamp.toMillis()
-                : 0
+              timestampMs: tsMs
             });
           });
           appState.allRecords = records;
-          updateSyncBadge(true, '即時同步中 (Live)');
+          hideFirestoreError();
+          updateSyncBadge(true, '🟢 已連線 Firebase 即時同步');
           renderTeacherDashboard();
         },
         (error) => {
           console.error('Firestore onSnapshot error:', error);
-          updateSyncBadge(false, '同步中斷');
+          const code = error?.code || '';
+          if (code === 'permission-denied') {
+            showFirestoreError('權限被拒 (permission-denied)：請確認 Cloud Firestore 的安全性規則是否已設為「測試模式 (Test Mode)」。');
+          } else {
+            showFirestoreError('無法連線至 Cloud Firestore (' + (code || '連線錯誤') + ')：請確認已在 Firebase 控制台建立 Firestore Database。');
+          }
         }
       );
     }
@@ -1061,11 +1080,11 @@
     }
 
     async function clearAllFirestoreRecords() {
-      if (!db || !currentUser) return;
+      if (!db) return;
       const snap = await getDocs(getCheckinsCollectionRef());
       const deletions = [];
       snap.forEach((docSnap) => {
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'mood_checkins', docSnap.id);
+        const docRef = doc(db, COLLECTION_NAME, docSnap.id);
         deletions.push(deleteDoc(docRef));
       });
       await Promise.all(deletions);
@@ -1132,7 +1151,7 @@
 
       const today = getLocalDateString();
       if (appState.lastCheckInDate === today) {
-        appState.todayWeatherId = safeGetStorage(STORAGE_KEYS.TODAY_WEATHER);
+        appState.todayWeatherId = normalizeMoodId(safeGetStorage(STORAGE_KEYS.TODAY_WEATHER));
       } else {
         appState.todayWeatherId = null;
       }
@@ -1163,11 +1182,11 @@
         studentViewEl.classList.remove('flex');
         teacherViewEl.classList.remove('hidden');
         teacherViewEl.classList.add('flex');
-        document.title = '教師專屬・情緒氣象統計後台';
+        document.title = '📊 老師專屬：班級情緒氣象統計後台';
         populateShareLinks();
         updatePeriodTabUI();
         renderTeacherDashboard();
-        if (db && currentUser) {
+        if (db) {
           subscribeToTeacherStats();
         }
       } else {
@@ -1567,7 +1586,7 @@
       } else {
         modalFooterAreaEl.innerHTML = `
           <p class="text-sm font-bold text-[#8c4358] mb-3">
-            Today's heart is already collected! You can revisit any weather activity today.
+            You can revisit any weather activity today.
           </p>
           <button
             id="modal-done-btn"
@@ -1626,11 +1645,34 @@
     const moodStatsListEl = document.getElementById('mood-stats-list');
     const lastUpdatedLabelEl = document.getElementById('last-updated-label');
     const statsPeriodSubtitleEl = document.getElementById('stats-period-subtitle');
+    const liveSyncBadgeEl = document.getElementById('live-sync-badge');
     const liveSyncTextEl = document.getElementById('live-sync-text');
+    const firestoreErrorBannerEl = document.getElementById('firestore-error-banner');
+    const firestoreErrorDetailEl = document.getElementById('firestore-error-detail');
     const periodTabBtns = document.querySelectorAll('.period-tab');
 
     function updateSyncBadge(isLive, text) {
-      if (liveSyncTextEl) liveSyncTextEl.textContent = text;
+      if (!liveSyncBadgeEl || !liveSyncTextEl) return;
+      liveSyncTextEl.textContent = text;
+      if (isLive) {
+        liveSyncBadgeEl.className = 'inline-flex items-center gap-2 bg-[#eaf4e2] border border-[#a6cc8b] text-[#2b5932] text-xs sm:text-sm font-bold px-3.5 py-2 rounded-full shadow-sm';
+      } else {
+        liveSyncBadgeEl.className = 'inline-flex items-center gap-2 bg-[#ffe8ec] border border-[#e89cae] text-[#9e2541] text-xs sm:text-sm font-bold px-3.5 py-2 rounded-full shadow-sm';
+      }
+    }
+
+    function showFirestoreError(detailMessage) {
+      updateSyncBadge(false, '🔴 資料庫未連線（請檢查 Firestore 設定）');
+      if (firestoreErrorBannerEl && firestoreErrorDetailEl) {
+        firestoreErrorDetailEl.textContent = detailMessage;
+        firestoreErrorBannerEl.classList.remove('hidden');
+      }
+    }
+
+    function hideFirestoreError() {
+      if (firestoreErrorBannerEl) {
+        firestoreErrorBannerEl.classList.add('hidden');
+      }
     }
 
     function populateShareLinks() {
@@ -1718,7 +1760,7 @@
       });
 
       const totalCount = filtered.length;
-      const careCount = (counts.heavyRain || 0) + (counts.thunderstorm || 0);
+      const careCount = (counts.heavy_rain || 0) + (counts.thunderstorm || 0);
 
       // Determine most frequent mood
       let topMoodText = '尚無紀錄';
@@ -1799,12 +1841,14 @@
 
       // Sort newest first in JS memory
       const sorted = [...records].sort((a, b) => b.timestampMs - a.timestampMs);
-      const headers = ['日期 (Date)', '心情代碼 (Mood ID)', '心情天氣 (Mood Name)', '打卡時間 (Local Time)'];
+      const moodNameMap = Object.fromEntries(WEATHER_LIST.map((w) => [w.id, w.name]));
+      const headers = ['日期 (Date)', '打卡時間 (Time)', '心情代碼 (Mood ID)', '心情天氣 (Mood Name)'];
       const rows = sorted.map((r) => {
         const timeStr = r.timestampMs
-          ? new Date(r.timestampMs).toLocaleString('zh-TW', { hour12: false })
+          ? new Date(r.timestampMs).toLocaleTimeString('zh-TW', { hour12: false })
           : '';
-        return [r.date, r.moodId, `"${r.moodName}"`, `"${timeStr}"`].join(',');
+        const displayName = moodNameMap[r.moodId] || r.moodId;
+        return [r.date, `"${timeStr}"`, r.moodId, `"${displayName}"`].join(',');
       });
 
       // Include UTF-8 BOM for Excel Traditional Chinese compatibility
