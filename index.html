@@ -415,8 +415,8 @@
 
       <!-- Real-Time Sync Badge + Back to Student Page Button -->
       <div class="flex items-center gap-2.5 flex-wrap">
-        <div id="live-sync-badge" class="inline-flex items-center gap-2 bg-[#eaf4e2] border border-[#a6cc8b] text-[#2b5932] text-xs sm:text-sm font-bold px-3.5 py-2 rounded-full shadow-sm">
-          <span id="live-sync-text">🟢 已連線 Firebase 即時同步</span>
+        <div id="live-sync-badge" class="inline-flex items-center gap-2 bg-[#fff7e0] border border-[#ebd089] text-[#7a5b14] text-xs sm:text-sm font-bold px-3.5 py-2 rounded-full shadow-sm">
+          <span id="live-sync-text">🟡 正在連線 Firebase 雲端資料庫...</span>
         </div>
 
         <button
@@ -541,6 +541,24 @@
 
         <!-- Export CSV & Reset Buttons -->
         <div class="flex items-center gap-2.5 flex-wrap">
+          <button
+            id="test-cloud-write-btn"
+            type="button"
+            class="btn-mini px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold cursor-pointer inline-flex items-center gap-1.5"
+            title="寫入一筆測試資料以驗證 Firebase 連線是否正常"
+          >
+            <span>🧪</span>
+            <span>測試雲端寫入</span>
+          </button>
+          <button
+            id="reset-local-lock-btn"
+            type="button"
+            class="btn-mini px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold cursor-pointer inline-flex items-center gap-1.5"
+            title="清除此瀏覽器的今日已打卡限制，方便老師在同台電腦測試學生打卡"
+          >
+            <span>🔄</span>
+            <span>清除本機打卡鎖定</span>
+          </button>
           <button
             id="export-csv-btn"
             type="button"
@@ -741,13 +759,6 @@
     const WEATHER_SVGS = {
       sunny: `
         <svg class="w-11 h-11" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-          <defs>
-            <radialGradient id="sunCore" cx="38%" cy="35%" r="65%">
-              <stop offset="0%" stop-color="#FFE066"/>
-              <stop offset="65%" stop-color="#FFB82E"/>
-              <stop offset="100%" stop-color="#F59E0B"/>
-            </radialGradient>
-          </defs>
           <g fill="#F6AD37">
             <circle cx="32" cy="9" r="3.4"/>
             <circle cx="32" cy="55" r="3.4"/>
@@ -758,54 +769,39 @@
             <circle cx="48.3" cy="15.7" r="3.2"/>
             <circle cx="15.7" cy="48.3" r="3.2"/>
           </g>
-          <circle cx="32" cy="32" r="17.5" fill="url(#sunCore)" stroke="#E58E17" stroke-width="1.5"/>
-          <ellipse cx="26.5" cy="25" rx="5.5" ry="3.2" transform="rotate(-25 26.5 25)" fill="#FFF4B8" opacity="0.7"/>
+          <circle cx="32" cy="32" r="17.5" fill="#FFB82E" stroke="#E58E17" stroke-width="1.5"/>
+          <circle cx="30" cy="30" r="13.5" fill="#FFD152" opacity="0.65"/>
+          <ellipse cx="26.5" cy="25" rx="5.5" ry="3.2" transform="rotate(-25 26.5 25)" fill="#FFF4B8" opacity="0.85"/>
         </svg>
       `,
       partly_cloudy: `
         <svg class="w-11 h-11" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-          <defs>
-            <radialGradient id="pcSun" cx="35%" cy="35%" r="65%">
-              <stop offset="0%" stop-color="#FFE066"/>
-              <stop offset="100%" stop-color="#F59E0B"/>
-            </radialGradient>
-            <linearGradient id="pcCloud" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#FFFFFF"/>
-              <stop offset="100%" stop-color="#DDE7F2"/>
-            </linearGradient>
-          </defs>
           <g fill="#F6AD37">
             <circle cx="25" cy="11" r="2.4"/>
             <circle cx="12" cy="24" r="2.4"/>
             <circle cx="15.5" cy="14.5" r="2.3"/>
             <circle cx="35" cy="14.5" r="2.3"/>
           </g>
-          <circle cx="25" cy="26" r="13.5" fill="url(#pcSun)" stroke="#E58E17" stroke-width="1.3"/>
-          <path d="M25 49h24.5c5.2 0 9.5-4.1 9.5-9.2 0-4.7-3.6-8.6-8.3-9.1-1.4-5.4-6.4-9.2-12.2-9.2-6.1 0-11.2 4.4-12.2 10.2-.5-.1-.9-.1-1.3-.1-4.8 0-8.7 3.8-8.7 8.6 0 4.9 3.9 8.8 8.7 8.8z" fill="url(#pcCloud)" stroke="#C6D5E3" stroke-width="1.4"/>
+          <circle cx="25" cy="26" r="13.5" fill="#FFB82E" stroke="#E58E17" stroke-width="1.3"/>
+          <circle cx="23" cy="24" r="9.5" fill="#FFD966" opacity="0.65"/>
+          <path d="M25 49h24.5c5.2 0 9.5-4.1 9.5-9.2 0-4.7-3.6-8.6-8.3-9.1-1.4-5.4-6.4-9.2-12.2-9.2-6.1 0-11.2 4.4-12.2 10.2-.5-.1-.9-.1-1.3-.1-4.8 0-8.7 3.8-8.7 8.6 0 4.9 3.9 8.8 8.7 8.8z" fill="#EEF3FA" stroke="#B6C7DC" stroke-width="1.5"/>
+          <path d="M24.5 47.5h25c4.2 0 7.7-3.2 8-7.2-1.8 2.8-5 4.4-8.8 4.4H24.5c-3.1 0-5.8-1.5-7.1-3.8.5 3.8 3.5 6.6 7.1 6.6z" fill="#D5E1F0" opacity="0.85"/>
+          <ellipse cx="35" cy="28" rx="6.5" ry="3.2" fill="#FFFFFF" opacity="0.9"/>
+        </svg>
+      `,
+      overcast: `
+        <svg class="w-11 h-11" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <path d="M18.5 46h28.5c6.1 0 11-4.8 11-10.7 0-5.4-4.2-9.9-9.6-10.5-1.6-6.2-7.3-10.8-14-10.8-7.1 0-13 5.2-14.1 12-.6-.1-1.2-.1-1.8-.1-5.6 0-10.5 4.5-10.5 10 0 5.6 4.7 10.1 10.5 10.1z" fill="#DCE4F6" stroke="#9EB0D6" stroke-width="1.6"/>
+          <path d="M19 44.5h28c4.8 0 8.8-3.5 9.4-8.1-2.1 3.1-5.7 4.9-9.9 4.9H19.2c-3.8 0-7.1-1.7-8.8-4.5.7 4.4 4.3 7.7 8.6 7.7z" fill="#C2CEE9" opacity="0.9"/>
+          <ellipse cx="31" cy="24" rx="8.5" ry="4.2" fill="#FFFFFF" opacity="0.92"/>
+          <ellipse cx="18.5" cy="33" rx="4.5" ry="2.5" fill="#FFFFFF" opacity="0.75"/>
         </svg>
       `,
       heavy_rain: `
         <svg class="w-11 h-11" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="ovCloud" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#FFFFFF"/>
-              <stop offset="65%" stop-color="#E7EDF7"/>
-              <stop offset="100%" stop-color="#CFD9EC"/>
-            </linearGradient>
-          </defs>
-          <path d="M19 46h28c6.2 0 11-4.8 11-10.7 0-5.4-4.2-9.9-9.6-10.5-1.6-6.2-7.3-10.8-14-10.8-7.1 0-13 5.2-14.1 12-.6-.1-1.2-.1-1.8-.1-5.6 0-10.2 4.5-10.2 10 0 5.6 4.7 10.1 10.7 10.1z" fill="url(#ovCloud)" stroke="#B7C6DF" stroke-width="1.5"/>
-          <ellipse cx="29" cy="25" rx="7" ry="3.5" fill="#FFFFFF" opacity="0.85"/>
-        </svg>
-      `,
-      heavyRain: `
-        <svg class="w-11 h-11" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="rainCloud" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#E0E4FF"/>
-              <stop offset="100%" stop-color="#A8B2F0"/>
-            </linearGradient>
-          </defs>
-          <path d="M19 38h27c5.5 0 10-4.3 10-9.6 0-4.8-3.7-8.8-8.6-9.4-1.5-5.5-6.6-9.5-12.7-9.5-6.4 0-11.7 4.6-12.7 10.7-.5-.1-1-.1-1.5-.1-5.1 0-9.2 4-9.2 9 0 5 3.6 8.9 7.7 8.9z" fill="url(#rainCloud)" stroke="#8B96DC" stroke-width="1.4"/>
+          <path d="M19 38h27c5.5 0 10-4.3 10-9.6 0-4.8-3.7-8.8-8.6-9.4-1.5-5.5-6.6-9.5-12.7-9.5-6.4 0-11.7 4.6-12.7 10.7-.5-.1-1-.1-1.5-.1-5.1 0-9.2 4-9.2 9 0 5 3.6 8.9 7.7 8.9z" fill="#C4CCF8" stroke="#8592DC" stroke-width="1.5"/>
+          <path d="M19 36.6h27c4.3 0 7.9-3.1 8.4-7.1-1.9 2.7-5 4.3-8.7 4.3H19.4c-3.3 0-6.2-1.5-7.6-4 .6 3.9 3.6 6.8 7.2 6.8z" fill="#A5B0EE" opacity="0.9"/>
+          <ellipse cx="31" cy="18.5" rx="7" ry="3.2" fill="#EEF0FF" opacity="0.85"/>
           <g stroke="#4E5FD4" stroke-width="3.6" stroke-linecap="round">
             <line x1="21" y1="45" x2="18" y2="52"/>
             <line x1="31" y1="45" x2="28" y2="52"/>
@@ -815,13 +811,8 @@
       `,
       thunderstorm: `
         <svg class="w-11 h-11" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="boltGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#FF9F43"/>
-              <stop offset="100%" stop-color="#EE5A24"/>
-            </linearGradient>
-          </defs>
-          <path d="M36.5 9L17 34.5h13.5L26.5 55 47 28.5H33.5L36.5 9z" fill="url(#boltGrad)" stroke="#D9531E" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M36.5 9L17 34.5h13.5L26.5 55 47 28.5H33.5L36.5 9z" fill="#FF7F2A" stroke="#D9531E" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M34.5 13.5L21 32h11l-2.5 14 13.5-15.5H32l2.5-17z" fill="#FFAA4C" opacity="0.55"/>
         </svg>
       `,
       rainbow: `
@@ -992,6 +983,7 @@
     const COLLECTION_NAME = 'mood_checkins';
     let db = null;
     let unsubscribeStats = null;
+    let connectionTimeoutId = null;
 
     function initFirebaseBackend() {
       try {
@@ -1012,7 +1004,7 @@
     }
 
     async function recordCheckinToFirestore(weather, dateStr) {
-      if (!db) return;
+      if (!db) return { ok: false, error: '資料庫尚未初始化' };
       try {
         await addDoc(getCheckinsCollectionRef(), {
           mood: weather.id,
@@ -1020,9 +1012,11 @@
           createdAt: serverTimestamp(),
           clientTs: Date.now()
         });
+        return { ok: true };
       } catch (err) {
         // Gracefully swallow student-side errors so confetti & local heart still work smoothly
-        console.warn('Firestore write skipped or denied:', err?.code || err?.message);
+        console.error('Firestore write error:', err);
+        return { ok: false, error: err?.code || err?.message || '未知錯誤' };
       }
     }
 
@@ -1036,10 +1030,30 @@
       if (!db) return;
       if (unsubscribeStats) return;
 
+      updateSyncBadge('loading', '🟡 正在連線 Firebase 雲端資料庫...');
+
+      // If Firestore hasn't been created in Firebase Console, onSnapshot may hang silently.
+      // Show a diagnostic hint if no server response arrives within 6 seconds.
+      if (connectionTimeoutId) clearTimeout(connectionTimeoutId);
+      connectionTimeoutId = setTimeout(() => {
+        showFirestoreError(
+          '連線逾時：Firebase 尚未回應。這通常是因為您建立的是「Realtime Database」而非「Firestore Database」，或尚未建立 Cloud Firestore 資料庫。'
+        );
+      }, 6000);
+
       const colRef = getCheckinsCollectionRef();
       unsubscribeStats = onSnapshot(
         colRef,
+        { includeMetadataChanges: true },
         (snapshot) => {
+          const isFromServer = !snapshot.metadata.fromCache;
+          if (isFromServer && connectionTimeoutId) {
+            clearTimeout(connectionTimeoutId);
+            connectionTimeoutId = null;
+            hideFirestoreError();
+            updateSyncBadge('live', '🟢 已連線 Firebase 即時同步');
+          }
+
           const records = [];
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
@@ -1056,23 +1070,29 @@
             });
           });
           appState.allRecords = records;
-          hideFirestoreError();
-          updateSyncBadge(true, '🟢 已連線 Firebase 即時同步');
           renderTeacherDashboard();
         },
         (error) => {
+          if (connectionTimeoutId) {
+            clearTimeout(connectionTimeoutId);
+            connectionTimeoutId = null;
+          }
           console.error('Firestore onSnapshot error:', error);
           const code = error?.code || '';
           if (code === 'permission-denied') {
-            showFirestoreError('權限被拒 (permission-denied)：請確認 Cloud Firestore 的安全性規則是否已設為「測試模式 (Test Mode)」。');
+            showFirestoreError('權限被拒 (permission-denied)：請確認 Cloud Firestore 的安全性規則已開放讀寫（測試模式 Test Mode）。');
           } else {
-            showFirestoreError('無法連線至 Cloud Firestore (' + (code || '連線錯誤') + ')：請確認已在 Firebase 控制台建立 Firestore Database。');
+            showFirestoreError('無法連線至 Cloud Firestore (' + (code || '連線錯誤') + ')：請確認已在 Firebase 控制台建立「Firestore Database」。');
           }
         }
       );
     }
 
     function unsubscribeFromTeacherStats() {
+      if (connectionTimeoutId) {
+        clearTimeout(connectionTimeoutId);
+        connectionTimeoutId = null;
+      }
       if (unsubscribeStats) {
         unsubscribeStats();
         unsubscribeStats = null;
@@ -1619,7 +1639,7 @@
       safeSetStorage(STORAGE_KEYS.TODAY_WEATHER, weather.id);
 
       // Write check-in to Firebase Firestore for Teacher Statistics
-      recordCheckinToFirestore(weather, today);
+      await recordCheckinToFirestore(weather, today);
 
       launchConfetti();
       playGentleChime();
@@ -1651,18 +1671,20 @@
     const firestoreErrorDetailEl = document.getElementById('firestore-error-detail');
     const periodTabBtns = document.querySelectorAll('.period-tab');
 
-    function updateSyncBadge(isLive, text) {
+    function updateSyncBadge(status, text) {
       if (!liveSyncBadgeEl || !liveSyncTextEl) return;
       liveSyncTextEl.textContent = text;
-      if (isLive) {
+      if (status === 'live') {
         liveSyncBadgeEl.className = 'inline-flex items-center gap-2 bg-[#eaf4e2] border border-[#a6cc8b] text-[#2b5932] text-xs sm:text-sm font-bold px-3.5 py-2 rounded-full shadow-sm';
+      } else if (status === 'loading') {
+        liveSyncBadgeEl.className = 'inline-flex items-center gap-2 bg-[#fff7e0] border border-[#ebd089] text-[#7a5b14] text-xs sm:text-sm font-bold px-3.5 py-2 rounded-full shadow-sm';
       } else {
         liveSyncBadgeEl.className = 'inline-flex items-center gap-2 bg-[#ffe8ec] border border-[#e89cae] text-[#9e2541] text-xs sm:text-sm font-bold px-3.5 py-2 rounded-full shadow-sm';
       }
     }
 
     function showFirestoreError(detailMessage) {
-      updateSyncBadge(false, '🔴 資料庫未連線（請檢查 Firestore 設定）');
+      updateSyncBadge('error', '🔴 資料庫未連線（請檢查 Firestore 設定）');
       if (firestoreErrorBannerEl && firestoreErrorDetailEl) {
         firestoreErrorDetailEl.textContent = detailMessage;
         firestoreErrorBannerEl.classList.remove('hidden');
@@ -1914,6 +1936,32 @@
 
     document.getElementById('preview-student-btn').addEventListener('click', navigateToStudentPage);
     document.getElementById('export-csv-btn').addEventListener('click', exportRecordsToCSV);
+
+    // Diagnostic Button: Test writing one sample check-in to Firestore
+    document.getElementById('test-cloud-write-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('test-cloud-write-btn');
+      btn.disabled = true;
+      showToast('正在測試寫入 Firebase...');
+      const result = await recordCheckinToFirestore(WEATHER_LIST[0], getLocalDateString());
+      btn.disabled = false;
+      if (result.ok) {
+        showToast('✅ 寫入成功！Firebase 雲端同步正常運作');
+      } else {
+        showFirestoreError(`測試寫入失敗 (${result.error})：請確認已在 Firebase 控制台啟用「Firestore Database」且規則為測試模式。`);
+        showToast(`❌ 寫入失敗：${result.error}`);
+      }
+    });
+
+    // Helper Button: Clear local browser daily check-in lock for easy teacher testing
+    document.getElementById('reset-local-lock-btn').addEventListener('click', () => {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.LAST_DATE);
+        localStorage.removeItem(STORAGE_KEYS.TODAY_WEATHER);
+      } catch (e) { /* ignore */ }
+      appState.lastCheckInDate = null;
+      appState.todayWeatherId = null;
+      showToast('已清除本機今日打卡鎖定，現在可回學生頁面重新打卡測試！');
+    });
 
     periodTabBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
